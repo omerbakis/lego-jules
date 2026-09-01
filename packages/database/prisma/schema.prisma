@@ -1,0 +1,155 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model AppProfile {
+  id                String   @id @default(uuid())
+  displayName       String?
+  preferredCurrency String   @default("TRY")
+  timezone          String   @default("Europe/Istanbul")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  collectionItems   CollectionItem[]
+  wishlistItems     WishlistItem[]
+}
+
+model LegoSet {
+  id              String   @id @default(uuid())
+  setNumber       String   @unique
+  name            String
+  theme           String
+  subtheme        String?
+  releaseYear     Int?
+  pieceCount      Int?
+  minifigureCount Int?
+  imageUrl        String?
+  retailPrice     Float?
+  currency        String?
+  source          String?
+  sourceUpdatedAt DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  collectionItems CollectionItem[]
+  wishlistItems   WishlistItem[]
+  merchantProducts MerchantProduct[]
+}
+
+model CollectionItem {
+  id               String   @id @default(uuid())
+  appProfileId     String
+  legoSetId        String
+  quantity         Int      @default(1)
+  ownershipStatus  String   @default("OWNED")
+  setCondition     String?
+  completeness     String?
+  boxCondition     String?
+  manualCondition  String?
+  purchasePrice    Float?
+  purchaseCurrency String?
+  purchaseDate     DateTime?
+  purchasedFrom    String?
+  salePrice        Float?
+  saleCurrency     String?
+  saleDate         DateTime?
+  saleChannel      String?
+  notes            String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  appProfile       AppProfile @relation(fields: [appProfileId], references: [id])
+  legoSet          LegoSet    @relation(fields: [legoSetId], references: [id])
+}
+
+model WishlistItem {
+  id                     String   @id @default(uuid())
+  appProfileId           String
+  legoSetId              String
+  targetPrice            Float?
+  maximumAcceptablePrice Float?
+  currency               String?
+  priority               String   @default("MEDIUM")
+  notes                  String?
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  appProfile             AppProfile @relation(fields: [appProfileId], references: [id])
+  legoSet                LegoSet    @relation(fields: [legoSetId], references: [id])
+}
+
+model Merchant {
+  id                  String   @id @default(uuid())
+  name                String
+  domain              String
+  adapterKey          String   @unique
+  isEnabled           Boolean  @default(true)
+  discoveryInterval   Int      @default(86400) // seconds
+  refreshInterval     Int      @default(21600) // seconds
+  lastSuccessfulRunAt DateTime?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  products            MerchantProduct[]
+}
+
+model MerchantProduct {
+  id                String   @id @default(uuid())
+  merchantId        String
+  externalProductId String
+  canonicalUrl      String
+  title             String
+  imageUrl          String?
+  legoSetId         String?
+  classification    String   @default("UNKNOWN")
+  matchMethod       String?
+  matchConfidence   Float?
+  matchExplanation  String?
+  firstSeenAt       DateTime @default(now())
+  lastSeenAt        DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  merchant          Merchant  @relation(fields: [merchantId], references: [id])
+  legoSet           LegoSet?  @relation(fields: [legoSetId], references: [id])
+  offers            MerchantOffer[]
+
+  @@unique([merchantId, externalProductId])
+}
+
+model MerchantOffer {
+  id                String   @id @default(uuid())
+  merchantProductId String
+  externalOfferId   String?
+  sellerName        String
+  sellerScore       Float?
+  isOfficialSeller  Boolean  @default(false)
+  firstSeenAt       DateTime @default(now())
+  lastSeenAt        DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  product           MerchantProduct    @relation(fields: [merchantProductId], references: [id])
+  observations      PriceObservation[]
+
+  @@unique([merchantProductId, sellerName])
+}
+
+model PriceObservation {
+  id                  String   @id @default(uuid())
+  merchantOfferId     String
+  listPrice           Float
+  salePrice           Float
+  shippingPrice       Float?
+  currency            String   @default("TRY")
+  stockStatus         String
+  campaignType        String?
+  campaignDescription String?
+  observedAt          DateTime @default(now())
+  createdAt           DateTime @default(now())
+
+  offer               MerchantOffer @relation(fields: [merchantOfferId], references: [id])
+}

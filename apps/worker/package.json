@@ -1,0 +1,19 @@
+{
+  "name": "worker",
+  "version": "1.0.0",
+  "private": true,
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "ts-node src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "lint": "echo worker lint",
+    "typecheck": "tsc --noEmit",
+    "test": "echo worker test"
+  },
+  "devDependencies": {
+    "@lego/config": "workspace:^",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.5.0"
+  }
+}
