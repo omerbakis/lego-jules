@@ -15,5 +15,11 @@
     "@lego/config": "workspace:^",
     "ts-node": "^10.9.2",
     "typescript": "^5.5.0"
+  },
+  "dependencies": {
+    "@lego/database": "workspace:^",
+    "@prisma/client": "^5.15.0",
+    "bullmq": "^6.3.4",
+    "ioredis": "^6.0.0"
   }
 }

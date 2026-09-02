@@ -1,1 +1,2 @@
-console.log("Worker started");
+import './catalog-import';
+console.log("Worker initialized");
