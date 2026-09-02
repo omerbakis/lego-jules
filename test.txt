@@ -1,0 +1,11 @@
+total 64
+drwxrwxr-x 6 jules jules  4096 Sep  2 11:52 .
+drwxrwxr-x 3 jules jules  4096 Sep  1 22:07 ..
+drwxrwxr-x 3 jules jules  4096 Sep  2 12:06 catalog
+drwxrwxr-x 2 jules jules  4096 Sep  2 11:52 collection
+-rw-rw-r-- 1 jules jules 25931 Sep  1 22:07 favicon.ico
+-rw-rw-r-- 1 jules jules   488 Sep  1 22:07 globals.css
+-rw-rw-r-- 1 jules jules   690 Sep  1 22:07 layout.tsx
+-rw-rw-r-- 1 jules jules  3076 Sep  1 22:07 page.tsx
+drwxrwxr-x 2 jules jules  4096 Sep  2 11:27 profile
+drwxrwxr-x 2 jules jules  4096 Sep  2 11:52 wishlist

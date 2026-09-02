@@ -10,3 +10,4 @@ apps/*/node_modules
 apps/*/.pnpm
 *.tsbuildinfo
 .turbo\n*.tsbuildinfo\nnode_modules\n**/node_modules\ndist
+.pnpm-store
