@@ -1,2 +1,3 @@
-import './catalog-import';
-console.log("Worker initialized");
+import './catalog-import.js';
+import './product-discovery.js';
+console.log("Worker initialized with multiple queues.");
