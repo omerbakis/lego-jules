@@ -24,4 +24,40 @@ export class AppProfileService {
       where: { id },
     });
   }
+
+  update(id: string, updateData: UpdateAppProfileDto) {
+    return this.prisma.appProfile.update({
+      where: { id },
+      data: updateData as any
+    });
+  }
+
+  async getDashboardSummary() {
+    const profile = await this.prisma.appProfile.findFirst() || { displayName: 'Default Collector' };
+    const collectionItems = await this.prisma.collectionItem.findMany({
+      include: { legoSet: true },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    const distinctSets = new Set(collectionItems.map(i => i.legoSetId)).size;
+    const totalCost = collectionItems.reduce((acc, curr) => acc + (curr.purchasePrice || 0), 0);
+
+    const priceObservations = await this.prisma.priceObservation.findMany({
+      include: { offer: { include: { product: { include: { legoSet: true } }, merchant: true } } },
+      orderBy: { observedAt: 'desc' },
+      take: 5
+    });
+
+    return {
+      profile,
+      stats: {
+        totalPhysical: collectionItems.length,
+        distinctSets,
+        totalCost,
+        currentZeroValue: 0 // Would be calculated against real latest price observations
+      },
+      recentCollection: collectionItems.slice(0, 5),
+      recentPrices: priceObservations
+    };
+  }
 }
