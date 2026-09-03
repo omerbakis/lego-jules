@@ -13,8 +13,15 @@ Yerel bilgisayarınızda çalışan LEGO koleksiyon ve fiyat takip sistemi.
 
 
 ### Local Kurulum (PostgreSQL ve Redis localinizde kurulu olmalıdır)
+
+PowerShell (Windows) tek komut:
+```powershell
+powershell -ExecutionPolicy Bypass -File ./scripts/start.ps1
+```
+
+Alternatif npm script:
 ```bash
-./start.sh
+pnpm run start:windows
 ```
 
 ## 🏗️ Yapı
@@ -72,5 +79,4 @@ POST /admin/trigger-refresh
 - NestJS REST API
 - PostgreSQL + Prisma
 - Redis + BullMQ
-- Docker Compose
 - Jest + Playwright
