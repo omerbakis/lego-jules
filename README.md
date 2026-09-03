@@ -11,19 +11,10 @@ Yerel bilgisayarınızda çalışan LEGO koleksiyon ve fiyat takip sistemi.
 
 ## 🚀 Hızlı Başlangıç
 
-### Docker (Hepsi bir komutla)
-```bash
-docker compose up
-# Tarayıcı: http://localhost:3000
-```
 
-### Hybrid Dev (PostgreSQL + Redis docker'da, kod local'de)
+### Local Kurulum (PostgreSQL ve Redis localinizde kurulu olmalıdır)
 ```bash
-docker compose up -d postgres redis
-pnpm install
-pnpm db:migrate
-pnpm db:seed
-pnpm dev
+./start.sh
 ```
 
 ## 🏗️ Yapı
@@ -34,18 +25,12 @@ pnpm dev
 
 ## 📋 Komutlar
 ```bash
-pnpm dev              # Tüm servisler
-pnpm dev:web
-pnpm dev:api
-pnpm dev:worker
 
 pnpm test
 pnpm lint
 pnpm typecheck
 pnpm build
 
-pnpm db:migrate
-pnpm db:seed
 pnpm db:studio
 ```
 
