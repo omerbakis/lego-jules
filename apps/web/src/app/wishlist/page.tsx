@@ -1,12 +1,48 @@
 'use client';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { Button } from '../../components/ui/Button';
+import { Modal } from '../../components/ui/Modal';
+import { Card } from '../../components/ui/Card';
+import { Table, TableHeader, TableHead, TableBody, TableRow, TableCell } from '../../components/ui/Table';
+import { Badge } from '../../components/ui/Badge';
+import { Input } from '../../components/ui/Input';
+import { Select } from '../../components/ui/Select';
+import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
+import { EmptyState } from '../../components/ui/EmptyState';
+
+interface LegoSet {
+  id: string;
+  setNumber: string;
+  name: string;
+}
+
+interface WishlistItem {
+  id: string;
+  appProfileId: string;
+  legoSetId: string;
+  targetPrice: number | null;
+  maximumAcceptablePrice: number | null;
+  currency: string;
+  priority: string;
+  legoSet?: LegoSet;
+  createdAt: string;
+}
 
 export default function WishlistPage() {
-  const [items, setItems] = useState<any[]>([]);
+  const [items, setItems] = useState<WishlistItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [sortConfig, setSortConfig] = useState<{ key: keyof WishlistItem, direction: 'asc' | 'desc' } | null>(null);
+
+  // Form State
+  const [legoSetId, setLegoSetId] = useState('');
+  const [targetPrice, setTargetPrice] = useState('');
+  const [maxPrice, setMaxPrice] = useState('');
+  const [priority, setPriority] = useState('MEDIUM');
 
   useEffect(() => {
     fetchWishlist();
@@ -16,10 +52,10 @@ export default function WishlistPage() {
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/wishlist-items`);
       if (!res.ok) throw new Error('Failed to load wishlist');
-      const data = await res.json();
+      const data: WishlistItem[] = await res.json();
       setItems(data);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setLoading(false);
     }
@@ -35,92 +71,156 @@ export default function WishlistPage() {
     }
   };
 
-  if (loading) return <div className="p-8 text-gray-500 animate-pulse">Loading wishlist...</div>;
+  const handleAdd = async () => {
+    if (!legoSetId) return;
+    setIsSubmitting(true);
+    try {
+      const payload = {
+        appProfileId: '1',
+        legoSetId,
+        targetPrice: targetPrice ? parseFloat(targetPrice) : undefined,
+        maximumAcceptablePrice: maxPrice ? parseFloat(maxPrice) : undefined,
+        priority
+      };
+
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/wishlist-items`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) throw new Error('Failed to add item');
+      setIsModalOpen(false);
+      fetchWishlist();
+    } catch(err) {
+      console.error(err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleSort = (key: keyof WishlistItem) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+
+    setItems((prevItems) => {
+      return [...prevItems].sort((a, b) => {
+        if (a[key] === null) return 1;
+        if (b[key] === null) return -1;
+        if (a[key]! < b[key]!) return direction === 'asc' ? -1 : 1;
+        if (a[key]! > b[key]!) return direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+    });
+  };
+
+  if (loading) return <LoadingSpinner text="Loading your wishlist..." />;
   if (error) return <div className="p-8 text-red-500">Error: {error}</div>;
 
   return (
-    <div className="max-w-7xl mx-auto relative">
-      <div className="flex justify-between items-center mb-8">
+    <div className="max-w-7xl mx-auto space-y-6">
+      <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Wishlist</h1>
           <p className="text-gray-500 mt-2">Manage your target prices and priorities.</p>
         </div>
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition font-medium">
-          + Add to Wishlist
-        </button>
+        <Button onClick={() => setIsModalOpen(true)}>+ Add to Wishlist</Button>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <table className="w-full text-sm text-left">
-          <thead className="bg-gray-50 border-b border-gray-200">
-            <tr>
-              <th className="px-6 py-4 font-semibold text-gray-600">Set Number</th>
-              <th className="px-6 py-4 font-semibold text-gray-600">Name</th>
-              <th className="px-6 py-4 font-semibold text-gray-600">Target Price</th>
-              <th className="px-6 py-4 font-semibold text-gray-600">Max Price</th>
-              <th className="px-6 py-4 font-semibold text-gray-600">Priority</th>
-              <th className="px-6 py-4 font-semibold text-gray-600 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.length === 0 ? (
-              <tr><td colSpan={6} className="px-6 py-8 text-center text-gray-500">Your wishlist is empty.</td></tr>
-            ) : (
-              items.map((item: any) => (
-                <tr key={item.id} className="border-b hover:bg-gray-50 transition">
-                  <td className="px-6 py-4 font-mono text-gray-600">{item.legoSet?.setNumber}</td>
-                  <td className="px-6 py-4 font-medium text-gray-900">
-                    <Link href={`/catalog/${item.legoSet?.id}`} className="hover:text-blue-600 hover:underline">
+      <Card>
+        {items.length === 0 ? (
+          <EmptyState
+            title="Empty Wishlist"
+            description="You don't have any sets in your wishlist yet."
+            action={<Button onClick={() => setIsModalOpen(true)}>Add your first set</Button>}
+          />
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableHead className="cursor-pointer" onClick={() => handleSort('createdAt')}>Set Number ↕</TableHead>
+              <TableHead>Name</TableHead>
+              <TableHead className="cursor-pointer" onClick={() => handleSort('targetPrice')}>Target Price ↕</TableHead>
+              <TableHead>Max Price</TableHead>
+              <TableHead className="cursor-pointer" onClick={() => handleSort('priority')}>Priority ↕</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableHeader>
+            <TableBody>
+              {items.map((item) => (
+                <TableRow key={item.id}>
+                  <TableCell className="font-mono text-gray-600">{item.legoSet?.setNumber}</TableCell>
+                  <TableCell>
+                    <Link href={`/catalog/${item.legoSet?.id}`} className="font-medium text-blue-600 hover:underline">
                       {item.legoSet?.name || 'Unknown Set'}
                     </Link>
-                  </td>
-                  <td className="px-6 py-4 text-green-600 font-medium">{item.targetPrice} {item.currency}</td>
-                  <td className="px-6 py-4 text-gray-500">{item.maximumAcceptablePrice} {item.currency}</td>
-                  <td className="px-6 py-4">
-                    <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs font-bold tracking-wide">
+                  </TableCell>
+                  <TableCell className="text-green-600 font-medium">
+                    {item.targetPrice ? `${item.targetPrice} ${item.currency || 'TRY'}` : '-'}
+                  </TableCell>
+                  <TableCell className="text-gray-500">
+                    {item.maximumAcceptablePrice ? `${item.maximumAcceptablePrice} ${item.currency || 'TRY'}` : '-'}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={
+                      item.priority === 'MUST_HAVE' ? 'danger' :
+                      item.priority === 'HIGH' ? 'warning' :
+                      item.priority === 'LOW' ? 'default' : 'info'
+                    }>
                       {item.priority}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <button onClick={() => handleDelete(item.id)} className="text-red-500 hover:text-red-700 text-sm font-medium">Delete</button>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right space-x-2">
+                    <Button variant="ghost" size="sm" onClick={() => alert('Edit not fully mapped here')} className="text-blue-500">Edit</Button>
+                    <Button variant="ghost" size="sm" onClick={() => handleDelete(item.id)} className="text-red-500 hover:text-red-700">Delete</Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </Card>
 
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl shadow-lg w-full max-w-md overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="font-bold text-lg">Add to Wishlist</h3>
-            </div>
-            <div className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Target Price</label>
-                <input type="number" className="w-full border border-gray-300 rounded px-3 py-2" placeholder="e.g. 1500" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
-                <select className="w-full border border-gray-300 rounded px-3 py-2">
-                  <option>LOW</option>
-                  <option>MEDIUM</option>
-                  <option>HIGH</option>
-                  <option>MUST_HAVE</option>
-                </select>
-              </div>
-              <div className="flex justify-end space-x-3 pt-4 border-t border-gray-100">
-                <button onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded">Cancel</button>
-                <button className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Save</button>
-              </div>
-            </div>
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Add to Wishlist">
+        <div className="space-y-4">
+          <Input
+            label="Lego Set ID (UUID for now)"
+            value={legoSetId}
+            onChange={e => setLegoSetId(e.target.value)}
+            placeholder="e.g. 1234-abcd..."
+          />
+          <Input
+            label="Target Price"
+            type="number"
+            value={targetPrice}
+            onChange={e => setTargetPrice(e.target.value)}
+            placeholder="e.g. 1500"
+          />
+          <Input
+            label="Max Acceptable Price"
+            type="number"
+            value={maxPrice}
+            onChange={e => setMaxPrice(e.target.value)}
+            placeholder="e.g. 2000"
+          />
+          <Select
+            label="Priority"
+            value={priority}
+            onChange={e => setPriority(e.target.value)}
+            options={[
+              { value: 'LOW', label: 'Low' },
+              { value: 'MEDIUM', label: 'Medium' },
+              { value: 'HIGH', label: 'High' },
+              { value: 'MUST_HAVE', label: 'Must Have' }
+            ]}
+          />
+          <div className="flex justify-end space-x-3 pt-4 border-t border-gray-100">
+            <Button variant="ghost" onClick={() => setIsModalOpen(false)}>Cancel</Button>
+            <Button onClick={handleAdd} isLoading={isSubmitting}>Save</Button>
           </div>
         </div>
-      )}
+      </Modal>
     </div>
   );
 }
